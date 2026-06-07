@@ -1,0 +1,27 @@
+{
+  "name": "airgradient-gnome-extension",
+  "version": "0.1.0",
+  "description": "GNOME Shell 50+ panel extension for AirGradient sensors.",
+  "type": "module",
+  "private": true,
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "check": "./scripts/check.sh",
+    "dev:shell": "dbus-run-session gnome-shell --devkit --wayland",
+    "format": "prettier --write *.js tests/*.mjs metadata.json jsconfig.json stylesheet.css README.md docs/*.md",
+    "install:local": "./scripts/install-local.sh",
+    "lint": "eslint *.js",
+    "pack": "./scripts/pack.sh",
+    "prefs": "gnome-extensions prefs airgradient@worxbend.dev",
+    "smoke": "node tests/sensors-smoke.mjs && node tests/config-smoke.mjs && node tests/presentation-smoke.mjs",
+    "typecheck": "tsc --project jsconfig.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@girs/gjs": "latest",
+    "@girs/gnome-shell": "latest",
+    "eslint": "latest",
+    "prettier": "latest",
+    "typescript": "latest"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "uuid": "airgradient@worxbend.dev",
+  "name": "AirGradient Monitor",
+  "description": "Display AirGradient local-server readings in the GNOME Shell panel.",
+  "shell-version": ["50"],
+  "gettext-domain": "airgradient-gnome-extension"
+}

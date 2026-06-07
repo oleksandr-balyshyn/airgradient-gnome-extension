@@ -1,0 +1,132 @@
+import assert from "node:assert/strict";
+
+import { AlertMonitor, AlertSeverity } from "../airgradientAlerts.js";
+import {
+    aqiStatusColor,
+    co2StatusColor,
+    formatMetricValue,
+    overallStatus,
+    parseAirMeasurements,
+    pm25StatusColor,
+    trend,
+} from "../airgradientSensors.js";
+
+const localServerPayload = {
+    wifi: -46,
+    serialno: "ecda3b1eaaaf",
+    rco2: 447,
+    pm01: 3,
+    pm02: 7,
+    pm10: 8,
+    pm003Count: 442,
+    atmp: 25.87,
+    atmpCompensated: 24.47,
+    rhum: 43,
+    rhumCompensated: 49,
+    tvocIndex: 100,
+    tvocRaw: 33051,
+    noxIndex: 1,
+    noxRaw: 16307,
+};
+
+const snapshot = parseAirMeasurements(localServerPayload);
+
+assert.equal(snapshot.co2, 447);
+assert.equal(snapshot.pm1, 3);
+assert.equal(snapshot.pm25, 7);
+assert.equal(snapshot.pm10, 8);
+assert.equal(snapshot.pm003Count, 442);
+assert.equal(snapshot.temperature, 24.47);
+assert.equal(snapshot.humidity, 49);
+assert.equal(snapshot.tvoc, 100);
+assert.equal(snapshot.tvocUnit, "index");
+assert.equal(snapshot.tvoc_unit, "index");
+assert.equal(snapshot.nox, 1);
+assert.equal(snapshot.noxUnit, "index");
+assert.equal(snapshot.nox_unit, "index");
+assert.equal(Math.round(snapshot.aqi), 29);
+assert.equal(snapshot.pm003_count, 442);
+
+const nestedPayload = {
+    device: {
+        measurements: [
+            {
+                rco2: "812",
+                pm02: "13.2",
+                atmpCompensated: "22.4",
+                rhumCompensated: "45.5",
+            },
+            {
+                tvocIndex: "110",
+                noxIndex: "3",
+                pm003Count: "1200",
+            },
+        ],
+    },
+};
+
+const nested = parseAirMeasurements(nestedPayload);
+
+assert.equal(nested.co2, 812);
+assert.equal(nested.pm25, 13.2);
+assert.equal(nested.temperature, 22.4);
+assert.equal(nested.humidity, 45.5);
+assert.equal(nested.tvoc, 110);
+assert.equal(nested.tvocUnit, "index");
+assert.equal(nested.nox, 3);
+assert.equal(nested.noxUnit, "index");
+assert.equal(nested.pm003Count, 1200);
+assert.equal(nested.pm003_count, 1200);
+
+assert.equal(co2StatusColor(799.9), "green");
+assert.equal(co2StatusColor(800), "yellow");
+assert.equal(pm25StatusColor(35), "orange");
+assert.equal(aqiStatusColor(301), "gray");
+assert.equal(overallStatus({ aqi: 42, co2: 1500, pm25: 8 }), "orange");
+
+assert.equal(formatMetricValue(24.47), "24.5");
+assert.equal(formatMetricValue(100.2), "100");
+assert.equal(formatMetricValue(9), "9");
+assert.deepEqual(trend(7, 13.2, "µg/m³", true), {
+    label: "↓ -6.2 µg/m³",
+    context: "from last reading",
+    className: "trend-improved",
+    direction: "down",
+    delta: -6.199999999999999,
+    improves: true,
+});
+
+const monitor = new AlertMonitor(true);
+const notice = { co2: 900 };
+
+assert.deepEqual(monitor.evaluateAt(notice, 0), []);
+let alerts = monitor.evaluateAt(notice, 0);
+assert.equal(alerts.length, 1);
+assert.equal(alerts[0].severity, AlertSeverity.Notice);
+assert.equal(alerts[0].title, "CO2 is above 800 ppm");
+assert.deepEqual(monitor.evaluateAt(notice, 60 * 1000), []);
+
+alerts = monitor.evaluateAt({ co2: 2101 }, 60 * 1000);
+assert.equal(alerts.length, 1);
+assert.equal(alerts[0].severity, AlertSeverity.Critical);
+
+assert.equal(monitor.recordFetchErrorAt("timeout", 2 * 60 * 1000), null);
+assert.equal(monitor.recordFetchErrorAt("timeout", 2 * 60 * 1000), null);
+const offline = monitor.recordFetchErrorAt("connection refused", 2 * 60 * 1000);
+assert.equal(offline.severity, AlertSeverity.Warning);
+assert.match(offline.body, /connection refused/);
+
+const cooldownMonitor = new AlertMonitor(true);
+assert.deepEqual(cooldownMonitor.evaluateAt({ pm25: 80 }, 0), []);
+assert.equal(cooldownMonitor.evaluateAt({ pm25: 80 }, 0).length, 1);
+assert.deepEqual(cooldownMonitor.evaluateAt({ pm25: 80 }, 60 * 1000), []);
+assert.equal(
+    cooldownMonitor.evaluateAt({ pm25: 80 }, 20 * 60 * 1000).length,
+    1,
+);
+
+cooldownMonitor.setEnabled(false);
+cooldownMonitor.setEnabled(true);
+assert.deepEqual(cooldownMonitor.evaluateAt({ pm25: 200 }, 20 * 60 * 1000), []);
+
+console.log("sensor smoke tests passed");
