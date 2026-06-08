@@ -22,6 +22,15 @@ function currentTimeLabel() {
     return GLib.DateTime.new_now_local().format("%H:%M:%S");
 }
 
+function configsEqual(left, right) {
+    return (
+        left.server_url === right.server_url &&
+        left.refresh_interval_secs === right.refresh_interval_secs &&
+        left.notifications_enabled === right.notifications_enabled &&
+        left.start_minimized === right.start_minimized
+    );
+}
+
 const AirGradientIndicator = GObject.registerClass(
     class AirGradientIndicator extends PanelMenu.Button {
         _init(extension) {
@@ -33,6 +42,8 @@ const AirGradientIndicator = GObject.registerClass(
             this._refreshTimerId = 0;
             this._cancellable = null;
             this._refreshInFlight = false;
+            this._requestSerial = 0;
+            this._activeRequestId = 0;
             this._alerts = new AlertMonitor(this._config.notifications_enabled);
             this._client = new AirGradientHttpClient(extension.metadata);
             this._configMonitor = new DesktopConfigMonitor(() =>
@@ -44,7 +55,7 @@ const AirGradientIndicator = GObject.registerClass(
             this._popup = new AirGradientPopup({
                 menu: this.menu,
                 onOpenSettings: () => this._extension.openPreferences(),
-                onRefresh: () => this._refresh(),
+                onRefresh: () => this._refresh({ reloadConfig: true }),
             });
 
             this._configMonitor.start();
@@ -68,8 +79,7 @@ const AirGradientIndicator = GObject.registerClass(
 
         _reloadConfig() {
             const nextConfig = readDesktopConfig();
-            const changed =
-                JSON.stringify(nextConfig) !== JSON.stringify(this._config);
+            const changed = !configsEqual(nextConfig, this._config);
 
             this._config = nextConfig;
             this._alerts.setEnabled(nextConfig.notifications_enabled);
@@ -78,6 +88,8 @@ const AirGradientIndicator = GObject.registerClass(
 
         _restartRefreshTimer() {
             this._clearRefreshTimer();
+            if (!this._config.server_url) return;
+
             this._refreshTimerId = GLib.timeout_add_seconds(
                 GLib.PRIORITY_DEFAULT,
                 this._refreshIntervalSeconds(),
@@ -103,9 +115,9 @@ const AirGradientIndicator = GObject.registerClass(
             );
         }
 
-        _refresh() {
-            const configChanged = this._reloadConfig();
-            if (configChanged) this._restartRefreshTimer();
+        _refresh({ reloadConfig = false } = {}) {
+            if (reloadConfig && this._reloadConfig())
+                this._restartRefreshTimer();
 
             if (!this._config.server_url) {
                 this._cancelActiveRequest();
@@ -117,6 +129,8 @@ const AirGradientIndicator = GObject.registerClass(
 
             this._cancelActiveRequest();
             this._refreshInFlight = true;
+            const requestId = ++this._requestSerial;
+            this._activeRequestId = requestId;
             this._cancellable = this._client.createCancellable();
             this._popup.setStatus(
                 "Fetching measurements...",
@@ -126,7 +140,8 @@ const AirGradientIndicator = GObject.registerClass(
             this._client.fetchCurrentMeasurements(
                 this._config.server_url,
                 this._cancellable,
-                (error, snapshot) => this._handleFetchResult(error, snapshot),
+                (error, snapshot) =>
+                    this._handleFetchResult(requestId, error, snapshot),
             );
         }
 
@@ -136,11 +151,15 @@ const AirGradientIndicator = GObject.registerClass(
             this._client.cancel(this._cancellable);
             this._cancellable = null;
             this._refreshInFlight = false;
+            this._activeRequestId = 0;
         }
 
-        _handleFetchResult(error, snapshot) {
+        _handleFetchResult(requestId, error, snapshot) {
+            if (requestId !== this._activeRequestId) return;
+
             this._refreshInFlight = false;
             this._cancellable = null;
+            this._activeRequestId = 0;
 
             if (error) {
                 this._handleFetchError(error);

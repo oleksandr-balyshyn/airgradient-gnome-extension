@@ -8,6 +8,7 @@ export class DesktopConfigMonitor {
     constructor(onChanged) {
         this._monitor = null;
         this._signalId = 0;
+        this._idleId = 0;
         this._onChanged = onChanged;
     }
 
@@ -19,7 +20,10 @@ export class DesktopConfigMonitor {
             this._signalId = this._monitor.connect("changed", () => {
                 // File monitors may emit multiple events for one save. Moving
                 // work to idle coalesces bursts and keeps the D-Bus callback tiny.
-                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                if (this._idleId !== 0) return;
+
+                this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    this._idleId = 0;
                     this._onChanged();
                     return GLib.SOURCE_REMOVE;
                 });
@@ -30,6 +34,11 @@ export class DesktopConfigMonitor {
     }
 
     stop() {
+        if (this._idleId !== 0) {
+            GLib.source_remove(this._idleId);
+            this._idleId = 0;
+        }
+
         if (this._signalId !== 0) {
             this._monitor.disconnect(this._signalId);
             this._signalId = 0;
