@@ -57,7 +57,7 @@
 }
 
 .airgradient-primary-card {
-    width: 35%;
+    width: 45%;
     border-radius: 8px;
     padding: 7px;
     spacing: 3px;
@@ -99,7 +99,7 @@
 
 .airgradient-climate-column {
     spacing: 8px;
-    width: 65%;
+    width: 55%;
 }
 
 .airgradient-metric-card-row {
