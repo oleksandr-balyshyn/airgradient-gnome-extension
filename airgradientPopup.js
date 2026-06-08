@@ -2,6 +2,7 @@
 // owning sensor parsing, threshold, HTTP, or config policy.
 import Clutter from "gi://Clutter";
 import Gio from "gi://Gio";
+import GLib from "gi://GLib";
 import St from "gi://St";
 
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -353,19 +354,48 @@ function applyStyleClass(actor) {
         actor.remove_style_class_name(className);
 
     actor.add_style_class_name(
-        isDarkColorScheme()
+        isDarkColorScheme(actor)
             ? "airgradient-style-dark"
             : "airgradient-style-light",
     );
+
+    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+        for (const className of STYLE_CLASSES)
+            actor.remove_style_class_name(className);
+
+        actor.add_style_class_name(
+            isDarkColorScheme(actor)
+                ? "airgradient-style-dark"
+                : "airgradient-style-light",
+        );
+
+        return GLib.SOURCE_REMOVE;
+    });
 }
 
-function isDarkColorScheme() {
-    return [
+function isDarkColorScheme(actor = null) {
+    const actorDark = actorBackgroundIsDark(actor);
+    if (actorDark !== null) return actorDark;
+
+    try {
+        const colorScheme = St.Settings.get().get_color_scheme();
+        if (colorScheme === St.SystemColorScheme.PREFER_DARK) return true;
+        if (colorScheme === St.SystemColorScheme.PREFER_LIGHT) return false;
+    } catch {
+        // Fall through to settings and theme-name heuristics.
+    }
+
+    const themeHints = [
         settingsString(INTERFACE_SCHEMA, COLOR_SCHEME_KEY),
         settingsString(INTERFACE_SCHEMA, GTK_THEME_KEY),
         settingsString(USER_THEME_SCHEMA, USER_THEME_KEY),
         ...shellThemeStylesheets(),
-    ].some((value) => value.toLowerCase().includes("dark"));
+    ].map((value) => value.toLowerCase());
+
+    if (themeHints.some((value) => value.includes("dark"))) return true;
+    if (themeHints.some((value) => value.includes("light"))) return false;
+
+    return true;
 }
 
 function settingsString(schemaId, key) {
@@ -392,4 +422,31 @@ function shellThemeStylesheets() {
 
 function filePath(file) {
     return file?.get_path?.() ?? file?.get_basename?.() ?? "";
+}
+
+function actorBackgroundIsDark(actor) {
+    for (
+        let current = actor;
+        current;
+        current = current.get_parent?.() ?? null
+    ) {
+        const color = current.get_theme_node?.()?.get_background_color?.();
+        const alpha = colorComponent(color, "alpha", "a");
+        if (alpha === null || alpha < 32) continue;
+
+        const red = colorComponent(color, "red", "r");
+        const green = colorComponent(color, "green", "g");
+        const blue = colorComponent(color, "blue", "b");
+        if (red === null || green === null || blue === null) continue;
+
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue < 128;
+    }
+
+    return null;
+}
+
+function colorComponent(color, longName, shortName) {
+    const value = color?.[longName] ?? color?.[shortName];
+    if (typeof value !== "number") return null;
+    return value <= 1 ? value * 255 : value;
 }
