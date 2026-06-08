@@ -182,7 +182,7 @@ export class AirGradientPopup {
         const card = new St.BoxLayout({
             vertical: true,
             style_class: "airgradient-primary-card",
-            x_expand: false,
+            x_expand: true,
         });
 
         const top = new St.BoxLayout({ x_expand: true });
