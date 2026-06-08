@@ -37,6 +37,10 @@
     padding: 6px 3px;
 }
 
+.airgradient-style-light {
+    color: #241f31;
+}
+
 .airgradient-popup-header {
     spacing: 3px;
     padding: 8px 8px 10px;
@@ -58,7 +62,7 @@
     padding: 7px;
     spacing: 3px;
     background-color: #ffffff;
-    border: 1px solid #d0d0d0;
+    border: 2px solid #b8b8b8;
 }
 
 .airgradient-aqi-value {
@@ -82,7 +86,7 @@
 }
 
 .airgradient-dashboard-item {
-    padding: 0;
+    padding: 4px 6px;
 }
 
 .airgradient-dashboard {
@@ -108,7 +112,7 @@
     padding: 8px;
     spacing: 4px;
     background-color: #ffffff;
-    border: 1px solid #d0d0d0;
+    border: 2px solid #b8b8b8;
 }
 
 .airgradient-card-top {
@@ -180,6 +184,30 @@
     border-radius: 999px;
     background-color: rgba(127, 127, 127, 0.22);
     margin-top: 2px;
+}
+
+.airgradient-style-light .airgradient-popup-title,
+.airgradient-style-light .airgradient-aqi-level,
+.airgradient-style-light .airgradient-metric-value {
+    color: #241f31;
+}
+
+.airgradient-style-light .airgradient-popup-subtitle,
+.airgradient-style-light .airgradient-aqi-description,
+.airgradient-style-light .airgradient-metric-name,
+.airgradient-style-light .airgradient-metric-unit,
+.airgradient-style-light .airgradient-trend-neutral {
+    color: #5e5c64;
+}
+
+.airgradient-style-light .airgradient-primary-card,
+.airgradient-style-light .airgradient-metric-card {
+    background-color: #ffffff;
+    border: 2px solid #b8b8b8;
+}
+
+.airgradient-style-light .airgradient-bar-track {
+    background-color: #d0d0d0;
 }
 
 .airgradient-style-dark .airgradient-primary-card,
