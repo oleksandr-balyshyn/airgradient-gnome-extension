@@ -62,7 +62,13 @@ export class PanelStatusIcon {
 export class AirGradientPopup {
     constructor({ menu, onRefresh, onOpenSettings }) {
         this._metricCards = [];
+        this._themeStyle = null;
         this._build(menu, onRefresh, onOpenSettings);
+    }
+
+    destroy() {
+        this._themeStyle?.destroy();
+        this._themeStyle = null;
     }
 
     updateSnapshot({ serverUrl, snapshot, previousSnapshot, updatedAt }) {
@@ -93,7 +99,8 @@ export class AirGradientPopup {
 
     _build(menu, onRefresh, onOpenSettings) {
         menu.box.add_style_class_name("airgradient-popup");
-        applyStyleClass(menu.box);
+        this._themeStyle = new ThemeStyleController(menu.box);
+        this._themeStyle.start();
         menu.box.add_child(this._buildHeader());
         menu.addMenuItem(this._buildDashboardItem());
 
@@ -227,8 +234,7 @@ export class AirGradientPopup {
             x_expand: true,
         });
 
-        for (const card of cards)
-            if (card) row.add_child(card.actor);
+        for (const card of cards) if (card) row.add_child(card.actor);
 
         return row;
     }
@@ -263,6 +269,73 @@ export class AirGradientPopup {
     }
 }
 
+class ThemeStyleController {
+    constructor(actor) {
+        this._actor = actor;
+        this._settings = null;
+        this._settingsSignalId = 0;
+        this._themeContext = null;
+        this._themeContextSignalId = 0;
+        this._idleId = 0;
+    }
+
+    start() {
+        this._settings = shellSettings();
+        if (this._settings)
+            this._settingsSignalId = this._settings.connect(
+                "notify::color-scheme",
+                () => this._queueApply(),
+            );
+
+        this._themeContext = themeContext();
+        if (this._themeContext)
+            this._themeContextSignalId = this._themeContext.connect(
+                "changed",
+                () => this._queueApply(),
+            );
+
+        this._apply();
+        this._queueApply();
+    }
+
+    destroy() {
+        if (this._idleId) {
+            GLib.source_remove(this._idleId);
+            this._idleId = 0;
+        }
+
+        if (this._settingsSignalId) {
+            this._settings.disconnect(this._settingsSignalId);
+            this._settingsSignalId = 0;
+        }
+
+        if (this._themeContextSignalId) {
+            this._themeContext.disconnect(this._themeContextSignalId);
+            this._themeContextSignalId = 0;
+        }
+
+        this._actor = null;
+        this._settings = null;
+        this._themeContext = null;
+    }
+
+    _queueApply() {
+        if (this._idleId) return;
+
+        this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this._idleId = 0;
+            this._apply();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _apply() {
+        if (!this._actor) return;
+
+        applyStyleClass(this._actor);
+    }
+}
+
 class MetricGaugeCard {
     constructor(initialView) {
         this.name = initialView.name;
@@ -287,8 +360,7 @@ class MetricGaugeCard {
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._statusDot = new St.Widget({
-            style_class:
-                "airgradient-status-dot airgradient-card-status-gray",
+            style_class: "airgradient-status-dot airgradient-card-status-gray",
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._valueLabel = new St.Label({
@@ -358,32 +430,14 @@ function applyStyleClass(actor) {
             ? "airgradient-style-dark"
             : "airgradient-style-light",
     );
-
-    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-        for (const className of STYLE_CLASSES)
-            actor.remove_style_class_name(className);
-
-        actor.add_style_class_name(
-            isDarkColorScheme(actor)
-                ? "airgradient-style-dark"
-                : "airgradient-style-light",
-        );
-
-        return GLib.SOURCE_REMOVE;
-    });
 }
 
 function isDarkColorScheme(actor = null) {
+    const preferredDark = shellSettingsPrefersDark();
+    if (preferredDark !== null) return preferredDark;
+
     const actorDark = actorBackgroundIsDark(actor);
     if (actorDark !== null) return actorDark;
-
-    try {
-        const colorScheme = St.Settings.get().get_color_scheme();
-        if (colorScheme === St.SystemColorScheme.PREFER_DARK) return true;
-        if (colorScheme === St.SystemColorScheme.PREFER_LIGHT) return false;
-    } catch {
-        // Fall through to settings and theme-name heuristics.
-    }
 
     const themeHints = [
         settingsString(INTERFACE_SCHEMA, COLOR_SCHEME_KEY),
@@ -398,6 +452,21 @@ function isDarkColorScheme(actor = null) {
     return true;
 }
 
+function shellSettingsPrefersDark() {
+    const colorScheme = shellSettings()?.get_color_scheme?.();
+    if (colorScheme === St.SystemColorScheme.PREFER_DARK) return true;
+    if (colorScheme === St.SystemColorScheme.PREFER_LIGHT) return false;
+    return null;
+}
+
+function shellSettings() {
+    try {
+        return St.Settings.get();
+    } catch {
+        return null;
+    }
+}
+
 function settingsString(schemaId, key) {
     try {
         return new Gio.Settings({ schema_id: schemaId }).get_string(key);
@@ -407,16 +476,25 @@ function settingsString(schemaId, key) {
 }
 
 function shellThemeStylesheets() {
+    const context = themeContext();
+    if (!context) return [];
+
     try {
-        const theme = St.ThemeContext.get_for_stage(
-            globalThis.global.stage,
-        ).get_theme();
+        const theme = context.get_theme();
         return [
             filePath(theme.get_theme_stylesheet()),
             ...theme.get_custom_stylesheets().map(filePath),
         ].filter((value) => value.length > 0);
     } catch {
         return [];
+    }
+}
+
+function themeContext() {
+    try {
+        return St.ThemeContext.get_for_stage(globalThis.global.stage);
+    } catch {
+        return null;
     }
 }
 

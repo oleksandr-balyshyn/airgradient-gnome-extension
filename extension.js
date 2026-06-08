@@ -68,6 +68,7 @@ const AirGradientIndicator = GObject.registerClass(
             this._cancelActiveRequest();
             this._configMonitor.stop();
             this._client.destroy();
+            this._popup.destroy();
 
             super.destroy();
         }
