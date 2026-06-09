@@ -99,6 +99,21 @@ Pack a distributable extension bundle:
 npm run pack
 ```
 
+## CI/CD
+
+GitHub Actions runs `npm run check` for branch pushes and pull requests.
+
+Releases are published by the `Release` workflow. Push a version tag:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Or run the workflow manually from GitHub Actions and provide a version such as
+`1.0.0` or `v1.0.0`. The workflow validates the extension, packs it, creates the
+tag for manual runs if needed, and uploads the extension zip to a GitHub Release.
+
 Install the bundle for the current user:
 
 ```sh
