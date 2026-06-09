@@ -6,36 +6,18 @@ import St from "gi://St";
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 
 import {
-    PANEL_STATUS_CLASSES,
     buildAqiViewModel,
     buildMetricViewModels,
-    panelStatusClass,
 } from "./airgradientPresentation.js";
 
-const TEMPORARY_STATUS_CLASSES = [
-    "airgradient-refreshing",
-    "airgradient-error",
-];
-const TREND_CLASSES = [
-    "airgradient-trend-improved",
-    "airgradient-trend-worse",
-    "airgradient-trend-neutral",
-];
+const INHERITED_VALUE_STATUSES = new Set(["gray", "unknown"]);
 
 export class PanelStatusIcon {
     constructor() {
         this.actor = new St.Icon({
             icon_name: "weather-fog-symbolic",
-            style_class:
-                "system-status-icon airgradient-panel-icon airgradient-status-gray",
+            style_class: "system-status-icon airgradient-panel-icon",
         });
-    }
-
-    setStatus(status) {
-        for (const className of PANEL_STATUS_CLASSES)
-            this.actor.remove_style_class_name(className);
-
-        this.actor.add_style_class_name(panelStatusClass(status));
     }
 }
 
@@ -62,14 +44,10 @@ export class AirGradientPopup {
     updateUnavailable(message) {
         this._titleLabel.text = "AirGradient";
         this._subtitleLabel.text = "No fresh sensor data.";
-        this.setStatus(`Fetch failed: ${message}`, "airgradient-error");
+        this.setStatus(`Fetch failed: ${message}`);
     }
 
-    setStatus(message, className = null) {
-        for (const statusClass of TEMPORARY_STATUS_CLASSES)
-            this._statusLabel.remove_style_class_name(statusClass);
-
-        if (className) this._statusLabel.add_style_class_name(className);
+    setStatus(message) {
         this._statusLabel.text = message;
     }
 
@@ -184,7 +162,7 @@ export class AirGradientPopup {
         });
         this._aqiTrendLabel = new St.Label({
             text: "No previous reading",
-            style_class: "airgradient-trend-neutral airgradient-popup-subtitle",
+            style_class: "airgradient-popup-subtitle",
         });
 
         top.add_child(this._aqiValueLabel);
@@ -229,7 +207,7 @@ export class AirGradientPopup {
         this._aqiValueLabel.text = view.value;
         this._aqiLevelLabel.text = view.level;
         this._aqiDescriptionLabel.text = view.description;
-        this._aqiValueLabel.style = "";
+        this._aqiValueLabel.style = valueColorStyle(view);
         applyTrend(this._aqiTrendLabel, view.trend);
     }
 }
@@ -268,7 +246,7 @@ class MetricGaugeCard {
             y_align: Clutter.ActorAlign.CENTER,
         });
         this._trendLabel = new St.Label({
-            style_class: "airgradient-trend-neutral airgradient-popup-subtitle",
+            style_class: "airgradient-popup-subtitle",
             x_align: Clutter.ActorAlign.START,
         });
 
@@ -286,15 +264,17 @@ class MetricGaugeCard {
         this.name = view.name;
         this._nameLabel.text = view.name;
         this._valueLabel.text = view.value;
+        this._valueLabel.style = valueColorStyle(view);
         this._unitLabel.text = view.unit;
         applyTrend(this._trendLabel, view.trend);
     }
 }
 
 function applyTrend(label, trendView) {
-    for (const trendClass of TREND_CLASSES)
-        label.remove_style_class_name(trendClass);
-
     label.text = trendView.label;
-    label.add_style_class_name(`airgradient-${trendView.className}`);
+}
+
+function valueColorStyle(view) {
+    if (INHERITED_VALUE_STATUSES.has(view.status)) return "";
+    return view.color ? `color: ${view.color};` : "";
 }

@@ -7,15 +7,12 @@ import {
     buildMetricViewModels,
     colorForStatus,
     endpointForServerUrl,
-    panelStatusClass,
 } from "../airgradientPresentation.js";
 
 assert.equal(
     endpointForServerUrl("http://192.168.1.201/"),
     "http://192.168.1.201/measures/current",
 );
-assert.equal(panelStatusClass("orange"), "airgradient-status-orange");
-assert.equal(panelStatusClass("maroon"), "airgradient-status-maroon");
 assert.equal(colorForStatus("maroon"), "#a51d2d");
 assert.equal(aqiLevel(151), "Unhealthy");
 assert.match(aqiDescription(250), /risk of health effects/u);
@@ -44,16 +41,21 @@ const previous = {
 const aqi = buildAqiViewModel(current, previous);
 assert.equal(aqi.value, "71");
 assert.equal(aqi.level, "Moderate");
-assert.equal(aqi.fillRatio, 0.142);
+assert.equal(aqi.status, "yellow");
+assert.equal(aqi.color, colorForStatus("yellow"));
 assert.equal(aqi.trend.className, "trend-improved");
 
 const metrics = buildMetricViewModels(current, previous);
 const co2 = metrics.find((metric) => metric.name === "CO2");
+const humidity = metrics.find((metric) => metric.name === "Humidity");
+const pm10 = metrics.find((metric) => metric.name === "PM10");
 const tvoc = metrics.find((metric) => metric.name === "TVOC");
 
 assert.equal(co2.status, "yellow");
-assert.equal(co2.fillRatio, 0.45);
+assert.equal(co2.color, colorForStatus("yellow"));
 assert.equal(co2.trend.className, "trend-worse");
+assert.equal(humidity.status, "gray");
+assert.equal(pm10.status, "gray");
 assert.equal(tvoc.unit, "index");
 
 console.log("presentation smoke tests passed");

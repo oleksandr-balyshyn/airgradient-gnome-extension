@@ -10,7 +10,6 @@ import * as PanelMenu from "resource:///org/gnome/shell/ui/panelMenu.js";
 import { AirGradientHttpClient } from "./airgradientHttpClient.js";
 import { AirGradientPopup, PanelStatusIcon } from "./airgradientPopup.js";
 import { AlertMonitor } from "./airgradientAlerts.js";
-import { overallStatus } from "./airgradientSensors.js";
 import {
     DEFAULT_REFRESH_INTERVAL_SECS,
     MIN,
@@ -133,10 +132,7 @@ const AirGradientIndicator = GObject.registerClass(
             const requestId = ++this._requestSerial;
             this._activeRequestId = requestId;
             this._cancellable = this._client.createCancellable();
-            this._popup.setStatus(
-                "Fetching measurements...",
-                "airgradient-refreshing",
-            );
+            this._popup.setStatus("Fetching measurements...");
 
             this._client.fetchCurrentMeasurements(
                 this._config.server_url,
@@ -174,7 +170,6 @@ const AirGradientIndicator = GObject.registerClass(
             const previousSnapshot = this._currentSnapshot;
             this._currentSnapshot = snapshot;
 
-            this._panelIcon.setStatus(overallStatus(snapshot));
             this._popup.updateSnapshot({
                 previousSnapshot,
                 serverUrl: this._config.server_url,
@@ -195,7 +190,6 @@ const AirGradientIndicator = GObject.registerClass(
         }
 
         _showUnavailable(message) {
-            this._panelIcon.setStatus("gray");
             this._popup.updateUnavailable(message);
         }
 

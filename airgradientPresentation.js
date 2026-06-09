@@ -21,91 +21,62 @@ export const STATUS_COLORS = Object.freeze({
     yellow: "#f5c211",
 });
 
-export const PANEL_STATUS_CLASSES = Object.freeze([
-    "airgradient-status-green",
-    "airgradient-status-yellow",
-    "airgradient-status-orange",
-    "airgradient-status-red",
-    "airgradient-status-purple",
-    "airgradient-status-maroon",
-    "airgradient-status-gray",
-    "airgradient-status-unknown",
-]);
-
 export const METRIC_DEFINITIONS = Object.freeze([
     {
         name: "CO2",
         unit: "ppm",
         key: "co2",
-        gaugeMax: 2000,
         classifyStatus: co2StatusColor,
     },
     {
         name: "PM2.5",
         unit: "ug/m3",
         key: "pm25",
-        gaugeMax: 55,
         classifyStatus: pm25StatusColor,
     },
     {
         name: "PM1.0",
         unit: "ug/m3",
         key: "pm1",
-        gaugeMax: 55,
-        fixedStatus: "blue",
     },
     {
         name: "PM10",
         unit: "ug/m3",
         key: "pm10",
-        gaugeMax: 150,
-        fixedStatus: "orange",
     },
     {
         name: "PM0.3 Count",
         unit: "count",
         key: "pm003Count",
-        gaugeMax: 2000,
-        fixedStatus: "blue",
     },
     {
         name: "TVOC",
         unit: "ppb",
         key: "tvoc",
-        gaugeMax: 660,
         classifyStatus: tvocStatusColor,
     },
     {
         name: "NOx",
         unit: "ppb",
         key: "nox",
-        gaugeMax: 150,
         classifyStatus: noxStatusColor,
     },
     {
         name: "Temperature",
         unit: "C",
         key: "temperature",
-        gaugeMax: 40,
-        fixedStatus: "gray",
         lowerIsBetter: false,
     },
     {
         name: "Humidity",
         unit: "%",
         key: "humidity",
-        gaugeMax: 100,
-        fixedStatus: "green",
         lowerIsBetter: false,
     },
 ]);
 
 export function endpointForServerUrl(serverUrl) {
     return `${serverUrl.replace(/\/+$/u, "")}/measures/current`;
-}
-
-export function panelStatusClass(status) {
-    return `airgradient-status-${status ?? "gray"}`;
 }
 
 export function colorForStatus(status) {
@@ -144,7 +115,6 @@ export function buildAqiViewModel(snapshot, previousSnapshot) {
     return {
         color: colorForStatus(status),
         description: aqiDescription(value),
-        fillRatio: gaugeRatio(value, 500),
         level: aqiLevel(value),
         status,
         trend: trendView,
@@ -159,7 +129,6 @@ export function buildMetricViewModel(definition, snapshot, previousSnapshot) {
 
     return {
         color: colorForStatus(status),
-        fillRatio: gaugeRatio(value, definition.gaugeMax),
         name: definition.name,
         status,
         trend: trend(
@@ -187,11 +156,5 @@ function metricUnit(snapshot, definition) {
 
 function metricStatus(definition, value) {
     if (definition.classifyStatus) return definition.classifyStatus(value);
-    return definition.fixedStatus ?? "gray";
-}
-
-function gaugeRatio(value, gaugeMax) {
-    const number = Number(value);
-    if (!Number.isFinite(number) || gaugeMax <= 0) return 0;
-    return Math.max(0, Math.min(1, number / gaugeMax));
+    return "gray";
 }

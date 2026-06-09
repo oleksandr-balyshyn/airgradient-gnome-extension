@@ -24,9 +24,13 @@
 .airgradient-primary-card {
     width: 50%;
     border-radius: 8px;
-    border: 1px solid rgba(127, 127, 127, 0.35);
     padding: 7px;
     spacing: 3px;
+}
+
+.airgradient-primary-card,
+.airgradient-metric-card {
+    border: 1px solid rgba(127, 127, 127, 0.35);
 }
 
 .airgradient-aqi-value {
@@ -67,7 +71,6 @@
 .airgradient-metric-card {
     min-width: 96px;
     border-radius: 8px;
-    border: 1px solid rgba(127, 127, 127, 0.35);
     padding: 8px;
     spacing: 4px;
 }
