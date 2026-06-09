@@ -1,44 +1,10 @@
 .airgradient-panel-icon {
     icon-size: 1.15em;
-    color: #9a9996;
-}
-
-.airgradient-status-green {
-    color: #33d17a;
-}
-
-.airgradient-status-yellow {
-    color: #f5c211;
-}
-
-.airgradient-status-orange {
-    color: #ff7800;
-}
-
-.airgradient-status-red {
-    color: #ed333b;
-}
-
-.airgradient-status-purple {
-    color: #9141ac;
-}
-
-.airgradient-status-maroon {
-    color: #a51d2d;
-}
-
-.airgradient-status-gray,
-.airgradient-status-unknown {
-    color: #9a9996;
 }
 
 .airgradient-popup {
     min-width: 420px;
     padding: 6px 3px;
-}
-
-.airgradient-style-light {
-    color: #241f31;
 }
 
 .airgradient-popup-header {
@@ -52,17 +18,15 @@
 }
 
 .airgradient-popup-subtitle {
-    color: #77767b;
     font-size: 0.82em;
 }
 
 .airgradient-primary-card {
     width: 50%;
     border-radius: 8px;
+    border: 1px solid rgba(127, 127, 127, 0.35);
     padding: 7px;
     spacing: 3px;
-    background-color: #ffffff;
-    border: 2px solid #b8b8b8;
 }
 
 .airgradient-aqi-value {
@@ -71,18 +35,12 @@
 }
 
 .airgradient-aqi-level {
-    color: #241f31;
     font-size: 0.78em;
     font-weight: 700;
 }
 
 .airgradient-aqi-description {
-    color: #77767b;
     font-size: 0.82em;
-}
-
-.airgradient-aqi-track {
-    margin-top: 2px;
 }
 
 .airgradient-dashboard-item {
@@ -109,53 +67,13 @@
 .airgradient-metric-card {
     min-width: 96px;
     border-radius: 8px;
+    border: 1px solid rgba(127, 127, 127, 0.35);
     padding: 8px;
     spacing: 4px;
-    background-color: #ffffff;
-    border: 2px solid #b8b8b8;
 }
 
 .airgradient-card-top {
     spacing: 6px;
-}
-
-.airgradient-status-dot {
-    min-width: 7px;
-    min-height: 7px;
-    border-radius: 999px;
-    background-color: #9a9996;
-}
-
-.airgradient-card-status-blue {
-    background-color: #3584e4;
-}
-
-.airgradient-card-status-green {
-    background-color: #33d17a;
-}
-
-.airgradient-card-status-yellow {
-    background-color: #f5c211;
-}
-
-.airgradient-card-status-orange {
-    background-color: #ff7800;
-}
-
-.airgradient-card-status-red {
-    background-color: #ed333b;
-}
-
-.airgradient-card-status-purple {
-    background-color: #9141ac;
-}
-
-.airgradient-card-status-maroon {
-    background-color: #a51d2d;
-}
-
-.airgradient-card-status-gray {
-    background-color: #9a9996;
 }
 
 .airgradient-card-value-row {
@@ -163,94 +81,11 @@
 }
 
 .airgradient-metric-name {
-    color: #77767b;
     font-size: 0.76em;
     font-weight: 600;
 }
 
 .airgradient-metric-value {
-    color: #241f31;
     font-size: 1.18em;
     font-weight: 700;
-}
-
-.airgradient-metric-unit,
-.airgradient-trend-neutral {
-    color: #77767b;
-}
-
-.airgradient-bar-track {
-    min-height: 5px;
-    border-radius: 999px;
-    background-color: rgba(127, 127, 127, 0.22);
-    margin-top: 2px;
-}
-
-.airgradient-style-light .airgradient-popup-title,
-.airgradient-style-light .airgradient-aqi-level,
-.airgradient-style-light .airgradient-metric-value {
-    color: #241f31;
-}
-
-.airgradient-style-light .airgradient-popup-subtitle,
-.airgradient-style-light .airgradient-aqi-description,
-.airgradient-style-light .airgradient-metric-name,
-.airgradient-style-light .airgradient-metric-unit,
-.airgradient-style-light .airgradient-trend-neutral {
-    color: #5e5c64;
-}
-
-.airgradient-style-light .airgradient-primary-card,
-.airgradient-style-light .airgradient-metric-card {
-    background-color: #ffffff;
-    border: 2px solid #b8b8b8;
-}
-
-.airgradient-style-light .airgradient-bar-track {
-    background-color: #d0d0d0;
-}
-
-.airgradient-style-dark .airgradient-primary-card,
-.airgradient-style-dark .airgradient-metric-card {
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-}
-
-.airgradient-style-dark .airgradient-aqi-level,
-.airgradient-style-dark .airgradient-metric-value {
-    color: #f6f5f4;
-}
-
-.airgradient-style-dark .airgradient-popup-subtitle,
-.airgradient-style-dark .airgradient-aqi-description,
-.airgradient-style-dark .airgradient-metric-name,
-.airgradient-style-dark .airgradient-metric-unit,
-.airgradient-style-dark .airgradient-trend-neutral {
-    color: #c0bfbc;
-}
-
-.airgradient-style-dark .airgradient-bar-track {
-    background-color: rgba(255, 255, 255, 0.14);
-}
-
-.airgradient-bar-fill {
-    min-height: 5px;
-    border-radius: 999px;
-    background-color: #9a9996;
-}
-
-.airgradient-trend-improved {
-    color: #33d17a;
-}
-
-.airgradient-trend-worse {
-    color: #ff7800;
-}
-
-.airgradient-refreshing {
-    color: #99c1f1;
-}
-
-.airgradient-error {
-    color: #ff7b63;
 }

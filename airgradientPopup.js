@@ -1,8 +1,6 @@
 // GNOME Shell popup adapter. It renders already-prepared view models and avoids
 // owning sensor parsing, threshold, HTTP, or config policy.
 import Clutter from "gi://Clutter";
-import Gio from "gi://Gio";
-import GLib from "gi://GLib";
 import St from "gi://St";
 
 import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
@@ -14,18 +12,6 @@ import {
     panelStatusClass,
 } from "./airgradientPresentation.js";
 
-const AQI_GAUGE_WIDTH = 96;
-const CARD_GAUGE_WIDTH = 94;
-const CARD_STATUS_CLASSES = [
-    "airgradient-card-status-green",
-    "airgradient-card-status-yellow",
-    "airgradient-card-status-orange",
-    "airgradient-card-status-red",
-    "airgradient-card-status-purple",
-    "airgradient-card-status-maroon",
-    "airgradient-card-status-gray",
-    "airgradient-card-status-blue",
-];
 const TEMPORARY_STATUS_CLASSES = [
     "airgradient-refreshing",
     "airgradient-error",
@@ -35,12 +21,6 @@ const TREND_CLASSES = [
     "airgradient-trend-worse",
     "airgradient-trend-neutral",
 ];
-const INTERFACE_SCHEMA = "org.gnome.desktop.interface";
-const COLOR_SCHEME_KEY = "color-scheme";
-const GTK_THEME_KEY = "gtk-theme";
-const USER_THEME_SCHEMA = "org.gnome.shell.extensions.user-theme";
-const USER_THEME_KEY = "name";
-const STYLE_CLASSES = ["airgradient-style-light", "airgradient-style-dark"];
 
 export class PanelStatusIcon {
     constructor() {
@@ -62,14 +42,10 @@ export class PanelStatusIcon {
 export class AirGradientPopup {
     constructor({ menu, onRefresh, onOpenSettings }) {
         this._metricCards = [];
-        this._themeStyle = null;
         this._build(menu, onRefresh, onOpenSettings);
     }
 
-    destroy() {
-        this._themeStyle?.destroy();
-        this._themeStyle = null;
-    }
+    destroy() {}
 
     updateSnapshot({ serverUrl, snapshot, previousSnapshot, updatedAt }) {
         this._titleLabel.text = serverUrl ?? "AirGradient";
@@ -99,8 +75,6 @@ export class AirGradientPopup {
 
     _build(menu, onRefresh, onOpenSettings) {
         menu.box.add_style_class_name("airgradient-popup");
-        this._themeStyle = new ThemeStyleController(menu.box);
-        this._themeStyle.start();
         menu.box.add_child(this._buildHeader());
         menu.addMenuItem(this._buildDashboardItem());
 
@@ -208,12 +182,6 @@ export class AirGradientPopup {
             text: "Waiting for a measurement.",
             style_class: "airgradient-aqi-description",
         });
-        this._aqiTrack = new St.Widget({
-            style_class: "airgradient-bar-track airgradient-aqi-track",
-        });
-        this._aqiTrack.set_width(AQI_GAUGE_WIDTH);
-        this._aqiFill = new St.Widget({ style_class: "airgradient-bar-fill" });
-        this._aqiTrack.add_child(this._aqiFill);
         this._aqiTrendLabel = new St.Label({
             text: "No previous reading",
             style_class: "airgradient-trend-neutral airgradient-popup-subtitle",
@@ -222,7 +190,6 @@ export class AirGradientPopup {
         top.add_child(this._aqiValueLabel);
         top.add_child(this._aqiLevelLabel);
         card.add_child(top);
-        card.add_child(this._aqiTrack);
         card.add_child(this._aqiTrendLabel);
 
         return card;
@@ -262,77 +229,8 @@ export class AirGradientPopup {
         this._aqiValueLabel.text = view.value;
         this._aqiLevelLabel.text = view.level;
         this._aqiDescriptionLabel.text = view.description;
-        this._aqiValueLabel.style = `color: ${view.color};`;
-        this._aqiFill.set_width(Math.round(AQI_GAUGE_WIDTH * view.fillRatio));
-        this._aqiFill.style = `background-color: ${view.color};`;
+        this._aqiValueLabel.style = "";
         applyTrend(this._aqiTrendLabel, view.trend);
-    }
-}
-
-class ThemeStyleController {
-    constructor(actor) {
-        this._actor = actor;
-        this._settings = null;
-        this._settingsSignalId = 0;
-        this._themeContext = null;
-        this._themeContextSignalId = 0;
-        this._idleId = 0;
-    }
-
-    start() {
-        this._settings = shellSettings();
-        if (this._settings)
-            this._settingsSignalId = this._settings.connect(
-                "notify::color-scheme",
-                () => this._queueApply(),
-            );
-
-        this._themeContext = themeContext();
-        if (this._themeContext)
-            this._themeContextSignalId = this._themeContext.connect(
-                "changed",
-                () => this._queueApply(),
-            );
-
-        this._apply();
-        this._queueApply();
-    }
-
-    destroy() {
-        if (this._idleId) {
-            GLib.source_remove(this._idleId);
-            this._idleId = 0;
-        }
-
-        if (this._settingsSignalId) {
-            this._settings.disconnect(this._settingsSignalId);
-            this._settingsSignalId = 0;
-        }
-
-        if (this._themeContextSignalId) {
-            this._themeContext.disconnect(this._themeContextSignalId);
-            this._themeContextSignalId = 0;
-        }
-
-        this._actor = null;
-        this._settings = null;
-        this._themeContext = null;
-    }
-
-    _queueApply() {
-        if (this._idleId) return;
-
-        this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-            this._idleId = 0;
-            this._apply();
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
-    _apply() {
-        if (!this._actor) return;
-
-        applyStyleClass(this._actor);
     }
 }
 
@@ -359,10 +257,6 @@ class MetricGaugeCard {
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._statusDot = new St.Widget({
-            style_class: "airgradient-status-dot airgradient-card-status-gray",
-            y_align: Clutter.ActorAlign.CENTER,
-        });
         this._valueLabel = new St.Label({
             style_class: "airgradient-metric-value",
             x_expand: true,
@@ -373,22 +267,16 @@ class MetricGaugeCard {
             style_class: "airgradient-metric-unit",
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._track = new St.Widget({ style_class: "airgradient-bar-track" });
-        this._track.set_width(CARD_GAUGE_WIDTH);
-        this._fill = new St.Widget({ style_class: "airgradient-bar-fill" });
-        this._track.add_child(this._fill);
         this._trendLabel = new St.Label({
             style_class: "airgradient-trend-neutral airgradient-popup-subtitle",
             x_align: Clutter.ActorAlign.START,
         });
 
         top.add_child(this._nameLabel);
-        top.add_child(this._statusDot);
         valueRow.add_child(this._valueLabel);
         valueRow.add_child(this._unitLabel);
         this.actor.add_child(top);
         this.actor.add_child(valueRow);
-        this.actor.add_child(this._track);
         this.actor.add_child(this._trendLabel);
 
         this.update(initialView);
@@ -399,9 +287,6 @@ class MetricGaugeCard {
         this._nameLabel.text = view.name;
         this._valueLabel.text = view.value;
         this._unitLabel.text = view.unit;
-        this._fill.set_width(Math.round(CARD_GAUGE_WIDTH * view.fillRatio));
-        this._fill.style = `background-color: ${view.color};`;
-        updateStatusClasses(this._statusDot, view.status);
         applyTrend(this._trendLabel, view.trend);
     }
 }
@@ -412,119 +297,4 @@ function applyTrend(label, trendView) {
 
     label.text = trendView.label;
     label.add_style_class_name(`airgradient-${trendView.className}`);
-}
-
-function updateStatusClasses(actor, status) {
-    for (const className of CARD_STATUS_CLASSES)
-        actor.remove_style_class_name(className);
-
-    actor.add_style_class_name(`airgradient-card-status-${status ?? "gray"}`);
-}
-
-function applyStyleClass(actor) {
-    for (const className of STYLE_CLASSES)
-        actor.remove_style_class_name(className);
-
-    actor.add_style_class_name(
-        isDarkColorScheme(actor)
-            ? "airgradient-style-dark"
-            : "airgradient-style-light",
-    );
-}
-
-function isDarkColorScheme(actor = null) {
-    const preferredDark = shellSettingsPrefersDark();
-    if (preferredDark !== null) return preferredDark;
-
-    const actorDark = actorBackgroundIsDark(actor);
-    if (actorDark !== null) return actorDark;
-
-    const themeHints = [
-        settingsString(INTERFACE_SCHEMA, COLOR_SCHEME_KEY),
-        settingsString(INTERFACE_SCHEMA, GTK_THEME_KEY),
-        settingsString(USER_THEME_SCHEMA, USER_THEME_KEY),
-        ...shellThemeStylesheets(),
-    ].map((value) => value.toLowerCase());
-
-    if (themeHints.some((value) => value.includes("dark"))) return true;
-    if (themeHints.some((value) => value.includes("light"))) return false;
-
-    return true;
-}
-
-function shellSettingsPrefersDark() {
-    const colorScheme = shellSettings()?.get_color_scheme?.();
-    if (colorScheme === St.SystemColorScheme.PREFER_DARK) return true;
-    if (colorScheme === St.SystemColorScheme.PREFER_LIGHT) return false;
-    return null;
-}
-
-function shellSettings() {
-    try {
-        return St.Settings.get();
-    } catch {
-        return null;
-    }
-}
-
-function settingsString(schemaId, key) {
-    try {
-        return new Gio.Settings({ schema_id: schemaId }).get_string(key);
-    } catch {
-        return "";
-    }
-}
-
-function shellThemeStylesheets() {
-    const context = themeContext();
-    if (!context) return [];
-
-    try {
-        const theme = context.get_theme();
-        return [
-            filePath(theme.get_theme_stylesheet()),
-            ...theme.get_custom_stylesheets().map(filePath),
-        ].filter((value) => value.length > 0);
-    } catch {
-        return [];
-    }
-}
-
-function themeContext() {
-    try {
-        return St.ThemeContext.get_for_stage(globalThis.global.stage);
-    } catch {
-        return null;
-    }
-}
-
-function filePath(file) {
-    return file?.get_path?.() ?? file?.get_basename?.() ?? "";
-}
-
-function actorBackgroundIsDark(actor) {
-    for (
-        let current = actor;
-        current;
-        current = current.get_parent?.() ?? null
-    ) {
-        const color = current.get_theme_node?.()?.get_background_color?.();
-        const alpha = colorComponent(color, "alpha", "a");
-        if (alpha === null || alpha < 32) continue;
-
-        const red = colorComponent(color, "red", "r");
-        const green = colorComponent(color, "green", "g");
-        const blue = colorComponent(color, "blue", "b");
-        if (red === null || green === null || blue === null) continue;
-
-        return 0.2126 * red + 0.7152 * green + 0.0722 * blue < 128;
-    }
-
-    return null;
-}
-
-function colorComponent(color, longName, shortName) {
-    const value = color?.[longName] ?? color?.[shortName];
-    if (typeof value !== "number") return null;
-    return value <= 1 ? value * 255 : value;
 }
